@@ -28,22 +28,19 @@ def rotation_matrix(a, v):
 
 
 class Solid():
-    def __init__(self, center, angle=0, rot_vector=(1, 0, 0), size=1):
+    def __init__(self, center, size=1, mass=1):
         self.center = np.array(center)
 
-        self.angle = angle
-        rot_vector = np.array(rot_vector)
-        mag = np.sqrt(sum(rot_vector**2))
-        self.rot_vector = rot_vector/mag
-
         self.size = size
+        self.mass = mass
 
         self.vertices = np.array([])
         self.edges = np.array([])
 
     # Assumes the object has already been translated to the center point
     def rotate(self, angle, vector):
-        self.translate(-1*self.center)
+        center_copy = np.array([x for x in self.center])
+        self.translate(-1*center_copy)
 
         R = rotation_matrix(angle, vector)
         new_verts = []
@@ -53,10 +50,11 @@ class Solid():
 
         self.vertices = new_verts
 
-        self.translate(self.center)
+        self.translate(center_copy)
 
     def translate(self, vector):
         self.vertices = self.vertices + vector
+        self.center = self.center + vector
 
     def get_vertices(self):
         return self.vertices
@@ -66,18 +64,18 @@ class Solid():
 
 
 class Cube(Solid):
-    def __init__(self, center,  angle=0, rot_vector=(1, 0, 0), size=1):
-        Solid.__init__(self, center, angle=angle, rot_vector=rot_vector, size=size)
-        self.setup()
+    def __init__(self, center,  angle=0, rot_vector=(1, 0, 0), size=1, mass=1):
+        Solid.__init__(self, center, size=size, mass=mass)
+        self.setup(angle, rot_vector)
 
-    def setup(self):
+    def setup(self, angle, rot_vector):
         verts = []
         for i in [-1, 1]:
-            x = .5*i*self.size
+            x = self.center[0]+.5*i*self.size
             for j in [-1, 1]:
-                y = .5*j*self.size
+                y = self.center[1]+.5*j*self.size
                 for k in [-1, 1]:
-                    z = .5*k*self.size
+                    z = self.center[2]+.5*k*self.size
 
                     verts.append((x, y, z))
         self.vertices = verts
@@ -87,12 +85,55 @@ class Cube(Solid):
                       (5, 1), (5, 4), (5, 7),
                       (6, 2), (6, 4), (6, 7)]
 
-        self.translate(self.center)
-        self.rotate(self.angle, self.rot_vector)
+        # self.translate(self.center)
+        self.rotate(angle, rot_vector)
+
+    def moment_of_inertia(self):
+        I = np.zeros((3, 3))
+        I[0][0] = (self.mass/6)*self.size**2
+        I[1][1] = (self.mass/6)*self.size**2
+        I[2][2] = (self.mass/6)*self.size**2
+        return I
+
+
+# A size s tetrahedron (with no rotation) fits perfectly inside a size s cube.
+class Tetrahedron(Solid):
+    def __init__(self, center,  angle=0, rot_vector=(1, 0, 0), size=1, mass=1):
+        Solid.__init__(self, center, size=size, mass=mass)
+        self.setup(angle, rot_vector)
+
+    def setup(self, angle, rot_vector):
+        verts = []
+        for i in [-1, 1]:
+            x = self.center[0]+.5*i*self.size
+            for j in [-1, 1]:
+                y = self.center[1]+.5*j*self.size
+                for k in [-1, 1]:
+                    if i*j*k == -1:
+                        z = self.center[2]+.5*k*self.size
+
+                        verts.append((x, y, z))
+
+        self.vertices = verts
+
+        self.edges = []
+        for i in range(0, 3):
+            for j in range(i+1, 4):
+                self.edges.append((i, j))
+
+        #self.translate(self.center)
+        self.rotate(angle, rot_vector)
+
+    def moment_of_inertia(self):
+        print("Tetrahedron moment of inertia not implemented")
+        I = np.zeros((3, 3))
+        I[0][0] = (self.mass/20)*self.size**2
+        I[1][1] = (self.mass/20)*self.size**2
+        I[2][2] = (self.mass/20)*self.size**2
+        return I
 
 
 if __name__ == "__main__":
-    R = rotation_matrix(1, (3, 1, 1))
-    print(R)
-    print(np.dot(R, R.T))
-    print(np.linalg.det(R))
+    center1 = (1, 5, -20)
+    shape1 = Cube(center1)
+    print(shape1.center)
