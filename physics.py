@@ -59,7 +59,7 @@ class simulation():
                 I dw = rxF dt
                 dw = I^(-1) rXdp
                 """
-                MOI = s.moment_of_inertia()
+                MOI = s.MOI
                 r = bounced_list[i][0]-s.center
                 dv = bounced_list[i][1]
                 print(r, dv, np.cross(r, dv))

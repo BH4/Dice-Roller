@@ -29,12 +29,12 @@ def main():
 
     glTranslatef(0.0, -2.0, -5)
 
-    center1 = (1, 5, -20)
+    center1 = (0, 5, -5)
     center2 = (-1, 5, 0)
 
     t = 0
     w = .01
-    shape1 = Cube(center1, angle=1.05, rot_vector=(1, 2, 0))
+    shape1 = Tetrahedron(center1, angle=1.05, rot_vector=(1, 2, 0))
     #shape2 = Cube(center2)
     print(shape1.center)
 
@@ -61,3 +61,5 @@ def main():
 
 
 main()
+
+

@@ -49,6 +49,9 @@ class Solid():
             new_verts.append(newv)
 
         self.vertices = new_verts
+        # Note: MOI for platonic solids is proportional to identity so this
+        # does nothing, but may want to add more complex objects later.
+        self.MOI = np.dot(R, np.dot(self.MOI, R.T))
 
         self.translate(center_copy)
 
@@ -66,6 +69,7 @@ class Solid():
 class Cube(Solid):
     def __init__(self, center,  angle=0, rot_vector=(1, 0, 0), size=1, mass=1):
         Solid.__init__(self, center, size=size, mass=mass)
+        self.MOI = self.moment_of_inertia()
         self.setup(angle, rot_vector)
 
     def setup(self, angle, rot_vector):
@@ -100,6 +104,7 @@ class Cube(Solid):
 class Tetrahedron(Solid):
     def __init__(self, center,  angle=0, rot_vector=(1, 0, 0), size=1, mass=1):
         Solid.__init__(self, center, size=size, mass=mass)
+        self.MOI = self.moment_of_inertia()
         self.setup(angle, rot_vector)
 
     def setup(self, angle, rot_vector):
@@ -125,11 +130,10 @@ class Tetrahedron(Solid):
         self.rotate(angle, rot_vector)
 
     def moment_of_inertia(self):
-        print("Tetrahedron moment of inertia not implemented")
         I = np.zeros((3, 3))
-        I[0][0] = (self.mass/20)*self.size**2
-        I[1][1] = (self.mass/20)*self.size**2
-        I[2][2] = (self.mass/20)*self.size**2
+        I[0][0] = (self.mass/10)*self.size**2
+        I[1][1] = (self.mass/10)*self.size**2
+        I[2][2] = (self.mass/10)*self.size**2
         return I
 
 
