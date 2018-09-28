@@ -38,9 +38,9 @@ class Solid():
         self.edges = np.array([])
 
     # Assumes the object has already been translated to the center point
-    def rotate(self, angle, vector):
-        center_copy = np.array([x for x in self.center])
-        self.translate(-1*center_copy)
+    def rotate(self, angle, vector, rotation_point):
+        rotation_point_copy = np.array([x for x in rotation_point])
+        self.translate(-1*rotation_point_copy)
 
         R = rotation_matrix(angle, vector)
         new_verts = []
@@ -49,11 +49,13 @@ class Solid():
             new_verts.append(newv)
 
         self.vertices = new_verts
+
+        self.center = np.dot(self.center, R)
         # Note: MOI for platonic solids is proportional to identity so this
         # does nothing, but may want to add more complex objects later.
         self.MOI = np.dot(R, np.dot(self.MOI, R.T))
 
-        self.translate(center_copy)
+        self.translate(rotation_point_copy)
 
     def translate(self, vector):
         self.vertices = self.vertices + vector
@@ -64,6 +66,34 @@ class Solid():
 
     def get_edges(self):
         return self.edges
+
+    # currently only gets lever arm wrt the ground and only for convex shapes.
+    def get_lever_arm(self):
+        tol = .0001
+        num = 0
+        tot = np.array([0.0, 0.0, 0.0])
+        for v in self.vertices:
+            if -1*tol < v[1] < tol:
+                tot += v
+                num += 1
+
+        if num > 0:
+            return tot/num-self.center
+
+        lowestY = min([v[1] for v in self.vertices])
+        for v in self.vertices:
+            if -1*tol+lowestY < v[1] < tol+lowestY:
+                tot += v
+                num += 1
+
+        return tot/num-self.center
+
+    def parralel_axis(self, d):
+        # d is the vector from the center of mass to the new reference point
+        d_M = np.array([[0, -d[2], d[1]],
+                        [d[2], 0, -d[0]],
+                        [-d[1], d[0], 0]])
+        return self.MOI-self.mass*np.dot(d_M, d_M)
 
 
 class Cube(Solid):
@@ -90,7 +120,7 @@ class Cube(Solid):
                       (6, 2), (6, 4), (6, 7)]
 
         # self.translate(self.center)
-        self.rotate(angle, rot_vector)
+        self.rotate(angle, rot_vector, self.center)
 
     def moment_of_inertia(self):
         I = np.zeros((3, 3))
@@ -127,7 +157,7 @@ class Tetrahedron(Solid):
                 self.edges.append((i, j))
 
         #self.translate(self.center)
-        self.rotate(angle, rot_vector)
+        self.rotate(angle, rot_vector, self.center)
 
     def moment_of_inertia(self):
         I = np.zeros((3, 3))
@@ -138,6 +168,8 @@ class Tetrahedron(Solid):
 
 
 if __name__ == "__main__":
-    center1 = (1, 5, -20)
-    shape1 = Cube(center1)
+    center1 = (0, 0, 0)
+    shape1 = Cube(center1, angle=.1, rot_vector=(1, 2, 3))
+    shape1.rotate(-.1, (1, 2, 3), (1, 0, 0))
+    print(shape1.get_vertices())
     print(shape1.center)

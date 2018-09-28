@@ -9,8 +9,6 @@ class simulation():
     def __init__(self, shape_list):
         self.flag = True
 
-
-
         self.shapes = shape_list
 
         self.num_shapes = len(shape_list)
@@ -18,59 +16,76 @@ class simulation():
         self.velocities = np.zeros((self.num_shapes, 3))
         self.omegas = np.zeros((self.num_shapes, 3))
 
+        self.acc = np.array([0, -9.81, 0])  # Accelerate in -y direction
+
     def gravity(self, dt):
         for i, s in enumerate(self.shapes):
-            a = np.array([0, -9.81, 0])  # Accelerate in -y direction
+            a = self.acc
             v = self.velocities[i]
 
-            lowestY = min([v[1] for v in s.vertices])
+            lowestY = min([vert[1] for vert in s.vertices])
             if lowestY > 0:
                 self.velocities[i] = v+a*dt
+
             s.translate(v*dt)
 
-    def boundaries(self):
-        bounced_list = []
+    def boundaries(self, dt):
+        bounce_limit = gamma**7
+        tol = .01
         for i, s in enumerate(self.shapes):
+            w = self.omegas[i]
             lowestY_ind = np.argmin([v[1] for v in s.vertices])
             lowestY = s.vertices[lowestY_ind][1]
 
             if lowestY <= 0:
+                # Move back above boundary, reverse velocity, apply damping
                 s.translate([0, -1*lowestY, 0])
-                newv = self.velocities[i][1]*-1*gamma
-                if newv < gamma**10:
+                newv = -1*self.velocities[i][1]*gamma
+                if newv < bounce_limit:
                     newv = 0
+
                 dv = newv-self.velocities[i][1]
                 self.velocities[i][1] = newv
 
-                bounced_list.append((s.vertices[lowestY_ind], [0, dv, 0]))
+                # Torque due to impacting the floor
+                if newv > bounce_limit:
+                    """
+                    F = dp/dt
+                    tau = I dw/dt = rxF
+                    I dw = rxF dt
+                    dw = I^(-1) rXdp
+                    """
+                    MOI = s.MOI
+                    r = s.get_lever_arm()
+                    print(r, dv, np.cross(r, [0, dv, 0]))
+                    self.omegas[i] = slow_rotation*gamma*np.dot(s.mass*np.linalg.inv(MOI), np.cross(r, [0, dv, 0]))
+
+            if lowestY < tol:
+                #print('hi')
+                r = s.get_lever_arm()
+                MOI = s.parralel_axis(r)
+                F = s.mass*self.acc
+                dw = np.dot(np.linalg.inv(MOI), np.cross(-1*r, F)*dt)
+                print(r, MOI, dw, "hello")
+                self.omegas[i] = (gamma*self.omegas[i]+dw)
+
+                # Rotation about contact
+                w = self.omegas[i]
+
+                theta = dt*np.sqrt(w[0]**2+w[1]**2+w[2]**2)
+                print(theta)
+                if theta > 0:
+                    s.rotate(theta, w, r+s.center)
             else:
-                bounced_list.append(None)
+                # Rotation about center
+                w = self.omegas[i]
 
-        return bounced_list
-
-    def torque(self, dt, bounced_list):
-        for i, s in enumerate(self.shapes):
-            w = self.omegas[i]
-
-            if bounced_list[i] is not None:
-                """
-                F = dp/dt
-                tau = I dw/dt = rxF
-                I dw = rxF dt
-                dw = I^(-1) rXdp
-                """
-                MOI = s.MOI
-                r = bounced_list[i][0]-s.center
-                dv = bounced_list[i][1]
-                print(r, dv, np.cross(r, dv))
-                self.omegas[i] = slow_rotation*gamma*np.dot(s.mass*np.linalg.inv(MOI), np.cross(r, dv))
-
-            theta = dt*np.sqrt(w[0]**2+w[1]**2+w[2]**2)
-            if theta > 0:
-                s.rotate(theta, w)
+                theta = dt*np.sqrt(w[0]**2+w[1]**2+w[2]**2)
+                print(theta)
+                if theta > 0:
+                    s.rotate(theta, w, s.center)
 
     def step(self, dt):
         self.gravity(dt)
-        bounced_list = self.boundaries()
-        self.torque(dt, bounced_list)
+        self.boundaries(dt)
         # self.interactions()

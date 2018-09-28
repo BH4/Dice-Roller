@@ -9,6 +9,8 @@ from OpenGL.GL import GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glBegin
 from OpenGL.GL import glVertex3fv, glEnd
 from OpenGL.GLU import gluPerspective
 
+from random import random
+
 
 def Draw_Shape(shape):
     glBegin(GL_LINES)
@@ -29,14 +31,14 @@ def main():
 
     glTranslatef(0.0, -2.0, -5)
 
-    center1 = (0, 5, -5)
+    center1 = (0, 4, -5)
     center2 = (-1, 5, 0)
 
-    t = 0
-    w = .01
-    shape1 = Tetrahedron(center1, angle=1.05, rot_vector=(1, 2, 0))
+    x, y, z = (random(), random(), random())
+
+    shape1 = Cube(center1, angle=.1, rot_vector=(x, y, z))
     #shape2 = Cube(center2)
-    print(shape1.center)
+    print(x, y, z)
 
     sim = simulation([shape1])#, shape2])
 
@@ -55,11 +57,5 @@ def main():
 
         sim.step(.01)
 
-        # t += 1
-        # shape1.rotate(w, (3, 1, 1))
-        # shape2.rotate(w, (3, 1, 1))
-
 
 main()
-
-
