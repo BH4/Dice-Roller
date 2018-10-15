@@ -57,23 +57,19 @@ class simulation():
                     """
                     MOI = s.MOI
                     r = s.get_lever_arm()
-                    print(r, dv, np.cross(r, [0, dv, 0]))
                     self.omegas[i] = slow_rotation*gamma*np.dot(s.mass*np.linalg.inv(MOI), np.cross(r, [0, dv, 0]))
 
             if lowestY < tol:
-                #print('hi')
                 r = s.get_lever_arm()
                 MOI = s.parralel_axis(r)
                 F = s.mass*self.acc
                 dw = np.dot(np.linalg.inv(MOI), np.cross(-1*r, F)*dt)
-                print(r, MOI, dw, "hello")
                 self.omegas[i] = (gamma*self.omegas[i]+dw)
 
                 # Rotation about contact
                 w = self.omegas[i]
 
                 theta = dt*np.sqrt(w[0]**2+w[1]**2+w[2]**2)
-                print(theta)
                 if theta > 0:
                     s.rotate(theta, w, r+s.center)
             else:
@@ -81,7 +77,6 @@ class simulation():
                 w = self.omegas[i]
 
                 theta = dt*np.sqrt(w[0]**2+w[1]**2+w[2]**2)
-                print(theta)
                 if theta > 0:
                     s.rotate(theta, w, s.center)
 

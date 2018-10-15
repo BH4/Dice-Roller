@@ -38,7 +38,6 @@ def main():
 
     shape1 = Cube(center1, angle=.1, rot_vector=(x, y, z))
     #shape2 = Cube(center2)
-    print(x, y, z)
 
     sim = simulation([shape1])#, shape2])
 
