@@ -5,6 +5,10 @@ import numpy as np
 def rotation_matrix(a, v):
     v = np.array(v)
     mag = np.sqrt(sum(v**2))
+
+    if mag == 0:
+        return np.eye(3)
+
     v = v/mag
 
     R = np.zeros((3, 3))
@@ -37,7 +41,6 @@ class Solid():
         self.vertices = np.array([])
         self.edges = np.array([])
 
-    # Assumes the object has already been translated to the center point
     def rotate(self, angle, vector, rotation_point):
         rotation_point_copy = np.array([x for x in rotation_point])
         self.translate(-1*rotation_point_copy)
